@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>進路二者面談 資料作成</title>
+<style>
+  :root{
+    --bg:#f4f6f9; --panel:#ffffff; --ink:#1f2d3d; --sub:#5b6b7b;
+    --line:#dce3ec; --accent:#2563a8; --accent-soft:#e8f0fa;
+    --stu:#1f8a55; --stu-soft:#e8f6ee; --tea:#7c3aed; --tea-soft:#f1eafd;
+    --ok:#1f8a55; --warn:#c2410c; --danger:#b3261e; --shadow:0 1px 3px rgba(20,40,70,.08);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+    background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6;}
+  header.app{background:var(--accent);color:#fff;padding:0 18px;display:flex;
+    align-items:center;gap:18px;position:sticky;top:0;z-index:20;box-shadow:var(--shadow);height:52px}
+  header.app h1{font-size:16px;margin:0;font-weight:700;letter-spacing:.02em;white-space:nowrap}
+  .tabs{display:flex;gap:4px;height:100%}
+  .tab{background:none;border:none;color:#cfe0f3;font-family:inherit;font-size:13.5px;font-weight:700;
+    padding:0 16px;cursor:pointer;border-bottom:3px solid transparent;height:100%;display:flex;align-items:center;gap:6px}
+  .tab:hover{color:#fff}
+  .tab.active{color:#fff;border-bottom-color:#fff}
+  header.app .meta{font-size:12px;opacity:.85;margin-left:auto;white-space:nowrap}
+  .layout{display:flex;min-height:calc(100vh - 52px)}
+  /* sidebar */
+  .sidebar{width:280px;background:var(--panel);border-right:1px solid var(--line);
+    display:flex;flex-direction:column;flex-shrink:0}
+  .sidebar.hidden{display:none}
+  .side-head{padding:12px;border-bottom:1px solid var(--line)}
+  .side-head input{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px}
+  .btn{border:none;border-radius:8px;padding:8px 12px;font-size:13px;cursor:pointer;font-family:inherit;font-weight:600}
+  .btn.primary{background:var(--accent);color:#fff}
+  .btn.primary:hover{background:#1d4f86}
+  .btn.ghost{background:var(--accent-soft);color:var(--accent)}
+  .btn.ghost:hover{background:#d7e6f7}
+  .btn.stu{background:var(--stu);color:#fff}
+  .btn.stu:hover{filter:brightness(.93)}
+  .btn.mini{padding:5px 9px;font-size:12px}
+  .btn.danger{background:#fbeae9;color:var(--danger)}
+  .btn.danger:hover{background:#f6d4d2}
+  .btn.lg{padding:12px 20px;font-size:15px}
+  .side-actions{padding:10px 12px;display:flex;gap:8px;border-bottom:1px solid var(--line)}
+  .side-actions .btn{flex:1}
+  .student-list{overflow-y:auto;flex:1}
+  .list-empty{padding:18px 14px;color:var(--sub);font-size:13px;text-align:center}
+  .stu{padding:10px 12px;border-bottom:1px solid var(--line);cursor:pointer;display:flex;flex-direction:column;gap:2px}
+  .stu:hover{background:#f7fafd}
+  .stu.active{background:var(--accent-soft);border-left:3px solid var(--accent);padding-left:9px}
+  .stu .nm{font-weight:700}
+  .stu .sub{font-size:12px;color:var(--sub);display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-size:11px;padding:1px 7px;border-radius:99px;background:#eef2f7;color:var(--sub)}
+  .pill.shingaku{background:#e7f0fb;color:#1d4f86}
+  .pill.shushoku{background:var(--stu-soft);color:var(--stu)}
+  .pill.mitedate{background:#fdeee2;color:var(--warn)}
+  .pill.sub-ok{background:var(--stu-soft);color:var(--stu)}
+  .pill.sub-no{background:#f0f1f3;color:#94a3b3}
+  .side-foot{padding:10px 12px;border-top:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap}
+  .side-foot .btn{flex:1;font-size:12px}
+  /* main */
+  .main{flex:1;overflow-y:auto;padding:20px 26px}
+  .wrap{max-width:920px;margin:0 auto}
+  .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;
+    min-height:60vh;color:var(--sub);text-align:center;gap:10px}
+  .empty svg{opacity:.4}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:18px 20px;margin-bottom:16px;box-shadow:var(--shadow)}
+  .card.stuband{border-top:4px solid var(--stu)}
+  .card.teaband{border-top:4px solid var(--tea)}
+  .card h2{font-size:14px;margin:0 0 14px;padding-bottom:8px;border-bottom:2px solid var(--accent-soft);
+    color:var(--accent);display:flex;align-items:center;gap:8px}
+  .card.stuband h2{color:var(--stu);border-bottom-color:var(--stu-soft)}
+  .card.teaband h2{color:var(--tea);border-bottom-color:var(--tea-soft)}
+  .role-tag{margin-left:auto;font-size:11px;font-weight:700;padding:2px 9px;border-radius:99px}
+  .role-tag.s{background:var(--stu-soft);color:var(--stu)}
+  .role-tag.t{background:var(--tea-soft);color:var(--tea)}
+  .grid{display:grid;gap:12px 16px}
+  .g2{grid-template-columns:1fr 1fr}
+  .g3{grid-template-columns:1fr 1fr 1fr}
+  .g4{grid-template-columns:repeat(4,1fr)}
+  .field{display:flex;flex-direction:column;gap:4px}
+  .field.span2{grid-column:span 2}
+  .field label{font-size:12px;color:var(--sub);font-weight:600}
+  .field input,.field select,.field textarea{padding:8px 10px;border:1px solid var(--line);
+    border-radius:8px;font-size:13px;font-family:inherit;background:#fff;width:100%}
+  .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+  .field input.err{border-color:var(--danger);background:#fdf3f2}
+  .field input.err:focus{border-color:var(--danger);box-shadow:0 0 0 2px #f6d4d2}
+  .hint.err{color:var(--danger);font-weight:600}
+  .field textarea{resize:vertical;min-height:64px}
+  .hint{font-size:11px;color:var(--sub)}
+  .intro{background:var(--stu-soft);border:1px solid #bfe3cd;border-radius:10px;padding:12px 16px;margin-bottom:16px;color:#155e3a;font-size:13px}
+  .intro b{font-size:14px}
+  /* wishes table */
+  table.wish{width:100%;border-collapse:collapse}
+  table.wish th,table.wish td{border:1px solid var(--line);padding:6px 8px;text-align:left;font-size:13px;vertical-align:middle}
+  table.wish th{background:#f7fafd;color:var(--sub);font-size:12px;font-weight:600}
+  table.wish input,table.wish select{border:1px solid transparent;background:transparent;width:100%;padding:5px 6px;border-radius:6px;font-size:13px;font-family:inherit}
+  table.wish input:focus,table.wish select:focus{outline:none;border-color:var(--accent);background:#fff}
+  table.wish td.rank{text-align:center;font-weight:700;color:var(--accent);width:48px;background:#f7fafd}
+  table.wish td.del{width:40px;text-align:center}
+  .icon-btn{border:none;background:none;cursor:pointer;color:var(--sub);font-size:15px;padding:2px 6px;border-radius:6px}
+  .icon-btn:hover{background:#f0f0f0;color:var(--danger)}
+  /* interview log */
+  .log{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:10px;background:#fcfdfe}
+  .log-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+  .log-head input[type=date]{padding:5px 8px;border:1px solid var(--line);border-radius:7px;font-size:13px}
+  .log-head .tag{font-size:11px;background:var(--accent-soft);color:var(--accent);padding:2px 9px;border-radius:99px;font-weight:700}
+  .log textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;resize:vertical;min-height:54px}
+  .toolbar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+  .toolbar .sp{flex:1}
+  .save-state{font-size:12px;color:var(--ok);font-weight:600;opacity:0;transition:opacity .3s}
+  .save-state.show{opacity:1}
+  /* meeting (combined) view */
+  .mtg-head{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 22px;margin-bottom:16px;
+    display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;box-shadow:var(--shadow)}
+  .mtg-head .big{font-size:22px;font-weight:800}
+  .mtg-head .kana{color:var(--sub);font-size:13px}
+  .mtg-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .read{margin-bottom:12px}
+  .read .k{font-size:12px;color:var(--sub);font-weight:600;margin-bottom:2px}
+  .read .v{font-size:14px;white-space:pre-wrap;background:#fafcfe;border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-height:20px}
+  .muted{color:#aab4c0}
+  table.read-wish{width:100%;border-collapse:collapse;margin-top:4px}
+  table.read-wish th,table.read-wish td{border:1px solid var(--line);padding:5px 8px;font-size:13px;text-align:left}
+  table.read-wish th{background:#f7fafd;color:var(--sub);font-size:11px}
+  /* modal */
+  .overlay{position:fixed;inset:0;background:rgba(20,35,55,.45);z-index:50;display:flex;align-items:center;justify-content:center;padding:20px}
+  .modal{background:#fff;border-radius:14px;padding:22px 24px;width:min(560px,100%);box-shadow:0 12px 40px rgba(0,0,0,.25)}
+  .modal h3{margin:0 0 8px;font-size:16px;color:var(--accent)}
+  .modal textarea{width:100%;min-height:130px;margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:8px;font-family:monospace;font-size:12px;resize:vertical}
+  .modal-act{display:flex;justify-content:flex-end;gap:10px;margin-top:14px}
+  /* print */
+  @media print{
+    header.app,.sidebar,.toolbar,.no-print{display:none !important}
+    .layout{display:block}
+    .main{padding:0;overflow:visible}
+    .wrap{max-width:none}
+    body{background:#fff;font-size:12px}
+    .card,.mtg-head{box-shadow:none;border:1px solid #bbb;page-break-inside:avoid;margin-bottom:10px}
+    .icon-btn,.log .btn{display:none !important}
+    .mtg-cols{gap:10px}
+    @page{margin:14mm}
+  }
+</style>
+</head>
+<body>
+<header class="app">
+  <h1>📋 進路二者面談</h1>
+  <nav class="tabs">
+    <button class="tab" data-mode="student">🙋 生徒入力</button>
+    <button class="tab" data-mode="teacher">🧑‍🏫 教員入力</button>
+    <button class="tab" data-mode="meeting">🤝 面談（合算）</button>
+  </nav>
+  <span class="meta" id="metaInfo"></span>
+</header>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="side-head">
+      <input type="text" id="search" placeholder="🔍 生徒を検索（氏名・番号）">
+    </div>
+    <div class="side-actions" id="sideActions"></div>
+    <div class="student-list" id="studentList"></div>
+    <div class="side-foot" id="sideFoot"></div>
+  </aside>
+  <main class="main" id="main"></main>
+</div>
+
+<input type="file" id="fileInput" accept="application/json" style="display:none">
+
+<script>
+/* ============ data ============ */
+const STORE_KEY='shinro_mendan_v2';      // 教員の名簿（全データ）
+const SELF_KEY='shinro_student_self_v2';  // 生徒が自分の端末で書く下書き
+const STU_FIELDS=['rosterId','hrno','name','kana','cls','no','course','wishField','subjectsGood','subjectsWeak','studentQuestions',
+  'famAlone','famRonin','famUniv','famArea','famNote'];
+
+// HRNO（例:3201 = 3年2組1番）→ クラス・番号・固定IDに変換
+function parseHRNO(h){
+  h=(h||'').trim();
+  if(!/^\d{4}$/.test(h)) return null;
+  const grade=h[0], clsNum=h[1], no=String(parseInt(h.slice(2),10));
+  const cls=`${grade}年${clsNum}組`;
+  return { cls, no, rosterId:`${cls}#${no}` };
+}
+
+/* =====================================================================
+   ★ クラス名簿 ★  ここに担任クラスの名簿を入れてください。
+   ・ROSTER_CLASS … クラス名（全員共通）
+   ・ROSTER … 出席番号順に {no:'出席番号', name:'氏名', kana:'ふりがな(任意)'}
+   名簿を入れると、生徒画面は「一覧から名前を選ぶ」方式に切り替わります。
+   空のままなら従来どおり手入力になります。
+   ===================================================================== */
+const ROSTER_CLASS='3年2組';
+// 生徒はHRNO（出席番号コード）と氏名を自分で入力する方式のため、公開ファイルには名簿（氏名一覧）を埋め込まない。
+const ROSTER=[];
+const rosterIdOf=r=>`${(r.cls||ROSTER_CLASS)}#${r.no}`;
+
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const esc=s=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const disp=s=>s&&String(s).trim()?esc(s).replace(/\n/g,'<br>'):'<span class="muted">未記入</span>';
+
+let state=loadState();
+let self_=loadSelf();
+let mode='teacher';
+let currentId=null;
+let saveTimer=null;
+
+function loadState(){ try{const d=JSON.parse(localStorage.getItem(STORE_KEY));if(d&&d.students)return d;}catch(e){} return {students:[]}; }
+function loadSelf(){ try{const d=JSON.parse(localStorage.getItem(SELF_KEY));if(d&&d.name!==undefined)return d;}catch(e){} return newStudent(); }
+function persistState(){ localStorage.setItem(STORE_KEY,JSON.stringify(state)); flashSaved(); }
+function persistSelf(){ localStorage.setItem(SELF_KEY,JSON.stringify(self_)); flashSaved(); }
+function flashSaved(){ const el=document.getElementById('saveState'); if(!el)return; el.classList.add('show'); clearTimeout(saveTimer); saveTimer=setTimeout(()=>el.classList.remove('show'),1200); }
+
+function newStudent(){
+  return { id:uid(), rosterId:'', hrno:'', name:'', kana:'', cls:'', no:'', course:'',
+    wishField:'', subjectsGood:'', subjectsWeak:'', studentQuestions:'',
+    famAlone:'', famRonin:'', famUniv:'', famArea:'', famNote:'',
+    wishes:[blankWish()],
+    grade:'', moshi:'', guardian:'', cost:'', tasks:'', teacherComment:'',
+    logs:[blankLog()], submittedAt:'' };
+}
+// 名簿1件 → 生徒オブジェクト（生徒記入欄のみ。固定IDを付与）
+function studentFromRoster(r){
+  const s=newStudent();
+  s.rosterId=rosterIdOf(r); s.cls=r.cls||ROSTER_CLASS; s.no=r.no; s.name=r.name; s.kana=r.kana||'';
+  return s;
+}
+function blankWish(){ return {type:'',name:'',dept:'',method:'',note:''}; }
+function blankLog(){ return {date:new Date().toISOString().slice(0,10),text:'',agree:''}; }
+
+/* ============ shared field builders ============ */
+function methodOpts(course){ return course==='就職'
+  ? ['','指定校求人','一般求人','公務員','縁故']
+  : ['','総合型選抜','学校推薦型(指定校)','学校推薦型(公募)','一般選抜','共通テスト利用']; }
+function typeOpts(course){ return course==='就職'
+  ? ['','企業','公務員','その他']
+  : ['','国公立大','私立大','短大','専門学校','その他']; }
+// 家庭で話したこと（条件）の選択肢
+const ALONE_OPTS=['','一人暮らしも可','自宅から通える範囲のみ','要相談・未定'];
+const RONIN_OPTS=['','浪人も可','現役のみ（浪人は不可）','要相談・未定'];
+const UNIV_OPTS=['','特にしばりなし','国公立中心で考えている','学費の都合で国公立希望','私立中心で考えている'];
+const optionsHTML=(opts,val)=>opts.map(o=>`<option value="${esc(o)}" ${val===o?'selected':''}>${o||'― 選択 ―'}</option>`).join('');
+
+// editable wishes table into containerId; obj.wishes mutated; onChange() after edits
+function bindWishEditable(obj, containerId, onChange){
+  const body=document.getElementById(containerId);
+  function draw(){
+    body.innerHTML='';
+    obj.wishes.forEach((w,i)=>{
+      const tr=document.createElement('tr');
+      const isS=obj.course==='就職';
+      tr.innerHTML=`
+        <td class="rank">第${i+1}</td>
+        <td><select data-i="${i}" data-f="type">${typeOpts(obj.course).map(o=>`<option ${w.type===o?'selected':''}>${o}</option>`).join('')}</select></td>
+        <td><input data-i="${i}" data-f="name" value="${esc(w.name)}" placeholder="${isS?'例：◯◯株式会社':'例：◯◯大学'}"></td>
+        <td><input data-i="${i}" data-f="dept" value="${esc(w.dept)}" placeholder="${isS?'例：総合職':'例：経済学部'}"></td>
+        <td><select data-i="${i}" data-f="method">${methodOpts(obj.course).map(o=>`<option ${w.method===o?'selected':''}>${o}</option>`).join('')}</select></td>
+        <td><input data-i="${i}" data-f="note" value="${esc(w.note)}" placeholder="出願時期・条件など"></td>
+        <td class="del"><button class="icon-btn no-print" data-del="${i}" title="削除">✕</button></td>`;
+      body.appendChild(tr);
+    });
+    body.querySelectorAll('select,input').forEach(el=>el.addEventListener('input',()=>{
+      obj.wishes[+el.dataset.i][el.dataset.f]=el.value; onChange();
+    }));
+    body.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{
+      if(obj.wishes.length<=1){alert('最低1件は必要です');return;}
+      obj.wishes.splice(+b.dataset.del,1); onChange(); draw();
+    });
+  }
+  draw();
+  return draw;
+}
+
+function bindLogsEditable(obj, containerId, onChange){
+  const body=document.getElementById(containerId);
+  function draw(){
+    body.innerHTML='';
+    obj.logs.forEach((lg,i)=>{
+      const div=document.createElement('div'); div.className='log';
+      div.innerHTML=`
+        <div class="log-head">
+          <span class="tag">第${i+1}回</span>
+          <input type="date" data-i="${i}" data-f="date" value="${esc(lg.date)}">
+          <span class="sp" style="flex:1"></span>
+          <button class="icon-btn no-print" data-del="${i}" title="削除">✕</button>
+        </div>
+        <textarea data-i="${i}" data-f="text" placeholder="面談での話し合いの内容・本人の様子・確認事項">${esc(lg.text)}</textarea>
+        <textarea data-i="${i}" data-f="agree" style="margin-top:8px;min-height:40px" placeholder="✓ 合意事項・次回までの宿題">${esc(lg.agree)}</textarea>`;
+      body.appendChild(div);
+    });
+    body.querySelectorAll('input,textarea').forEach(el=>el.addEventListener('input',()=>{
+      obj.logs[+el.dataset.i][el.dataset.f]=el.value; onChange();
+    }));
+    body.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{
+      if(obj.logs.length<=1){alert('最低1件は必要です');return;}
+      obj.logs.splice(+b.dataset.del,1); onChange(); draw();
+    });
+  }
+  draw();
+  return draw;
+}
+
+/* ============ STUDENT MODE ============ */
+function renderStudent(){
+  document.getElementById('sidebar').classList.add('hidden');
+  const s=self_;
+  document.getElementById('main').innerHTML=`
+  <div class="wrap">
+    <div class="toolbar no-print">
+      <span class="save-state" id="saveState">✓ 下書きを保存しました</span>
+      <span class="sp"></span>
+      <button class="btn ghost mini" id="loadDraft">📂 前回の提出ファイルを読込</button>
+    </div>
+    <div class="intro">
+      <b>このページは生徒のみなさんが入力するページです。</b><br>
+      面談の前に、自分の希望や考えを記入してください。入力内容はこの端末に自動で保存されます。
+      入力が終わったら、いちばん下の <b>「提出コードをコピー」</b> ボタンを押し、ロイロノートのテキストカードに貼り付けて提出してください。
+    </div>
+
+    <div class="card stuband">
+      <h2>👤 あなたについて <span class="role-tag s">生徒記入</span></h2>
+      <div class="grid g3">
+        <div class="field"><label>出席番号（HRNO）</label>
+          <input id="hrnoInput" value="${esc(s.hrno||'')}" placeholder="例：3201" inputmode="numeric" maxlength="4"></div>
+        <div class="field"><label>氏名</label><input data-f="name" value="${esc(s.name)}" placeholder="山田 太郎"></div>
+        <div class="field"><label>ふりがな</label><input data-f="kana" value="${esc(s.kana)}" placeholder="やまだ たろう"></div>
+      </div>
+      <div class="hint" id="hrnoHint" style="margin-top:6px">${s.rosterId?('→ '+esc(s.cls)+' '+esc(s.no)+'番'):'※ HRNO（例：3年2組1番なら 3201）を半角数字で入力してください'}</div>
+      <div class="grid g2" style="margin-top:12px">
+        <div class="field"><label>進路の希望</label>
+          <select data-f="course">
+            <option value="" ${!s.course?'selected':''}>まだ決めていない</option>
+            <option value="進学" ${s.course==='進学'?'selected':''}>進学したい</option>
+            <option value="就職" ${s.course==='就職'?'selected':''}>就職したい</option>
+          </select></div>
+      </div>
+    </div>
+
+    <div class="card stuband">
+      <h2>💭 希望・将来やりたいこと <span class="role-tag s">生徒記入</span></h2>
+      <div class="field">
+        <textarea data-f="wishField" style="min-height:100px" placeholder="将来の夢、なりたい職業、興味のある分野、進学/就職を選んだ理由などを自由に書いてください">${esc(s.wishField)}</textarea>
+      </div>
+    </div>
+
+    <div class="card stuband">
+      <h2>🎯 行きたい学校・受けたい企業 <span class="role-tag s">生徒記入</span></h2>
+      <table class="wish"><thead><tr>
+        <th style="width:48px">志望</th><th style="width:90px">区分</th>
+        <th>学校名 / 企業名</th><th>学部・学科 / 職種</th>
+        <th style="width:140px">受験方式・選考</th><th>備考</th><th style="width:40px"></th>
+      </tr></thead><tbody id="wishBody"></tbody></table>
+      <button class="btn stu mini no-print" id="addWish" style="margin-top:10px">＋ 志望先を追加</button>
+    </div>
+
+    <div class="card stuband">
+      <h2>📊 得意・苦手 <span class="role-tag s">生徒記入</span></h2>
+      <div class="grid g2">
+        <div class="field"><label>得意な科目・がんばっていること</label><textarea data-f="subjectsGood" placeholder="数学、英語、部活動 など">${esc(s.subjectsGood)}</textarea></div>
+        <div class="field"><label>苦手な科目・不安なこと</label><textarea data-f="subjectsWeak" placeholder="国語の記述、英語長文 など">${esc(s.subjectsWeak)}</textarea></div>
+      </div>
+    </div>
+
+    <div class="card stuband">
+      <h2>🏠 家庭で話したこと（おうちの人と相談した条件） <span class="role-tag s">生徒記入</span></h2>
+      <div class="grid g3">
+        <div class="field"><label>一人暮らし・通学範囲</label>
+          <select data-f="famAlone">${optionsHTML(ALONE_OPTS,s.famAlone)}</select></div>
+        <div class="field"><label>浪人について</label>
+          <select data-f="famRonin">${optionsHTML(RONIN_OPTS,s.famRonin)}</select></div>
+        <div class="field"><label>国公立・私立のしばり</label>
+          <select data-f="famUniv">${optionsHTML(UNIV_OPTS,s.famUniv)}</select></div>
+      </div>
+      <div class="field" style="margin-top:12px"><label>進学・通学してよい地域の範囲</label>
+        <input data-f="famArea" value="${esc(s.famArea)}" placeholder="例：関東〜中部まで／本州のみ／自宅から通える範囲 など"></div>
+      <div class="field" style="margin-top:12px"><label>その他、家庭で話したこと</label>
+        <textarea data-f="famNote" placeholder="学費・奨学金のこと、保護者の希望など、家で話し合ったことを書いてください">${esc(s.famNote)}</textarea></div>
+    </div>
+
+    <div class="card stuband">
+      <h2>🙋 面談で相談したいこと <span class="role-tag s">生徒記入</span></h2>
+      <div class="field">
+        <textarea data-f="studentQuestions" placeholder="先生に聞きたいこと、迷っていること、不安なことを書いてください">${esc(s.studentQuestions)}</textarea>
+      </div>
+    </div>
+
+    <div class="card stuband" style="text-align:center">
+      <p style="margin:4px 0 14px;color:var(--sub)">入力が終わったら、下のボタンで<b>提出コードをコピー</b>し、ロイロノートのテキストカードに貼り付けて提出してください。</p>
+      <button class="btn stu lg" id="copyCodeBtn">📋 提出コードをコピー</button>
+      <div style="margin-top:14px"><button class="btn ghost mini" id="submitBtn">📤 ファイルで書き出す（予備）</button></div>
+      <p class="hint" style="margin-top:8px">うまくコピーできないときは「ファイルで書き出す」を使ってください。</p>
+    </div>
+  </div>`;
+
+  document.querySelectorAll('[data-f]').forEach(el=>el.addEventListener('input',()=>{
+    s[el.dataset.f]=el.value; persistSelf();
+    if(el.dataset.f==='course') redrawWish();
+  }));
+  const hrnoEl=document.getElementById('hrnoInput');
+  if(hrnoEl){
+    const hint=document.getElementById('hrnoHint');
+    const validate=()=>{
+      s.hrno=hrnoEl.value.trim();
+      const p=parseHRNO(s.hrno);
+      if(p){
+        s.cls=p.cls; s.no=p.no; s.rosterId=p.rosterId;
+        hrnoEl.classList.remove('err'); hint.classList.remove('err');
+        hint.textContent='→ '+p.cls+' '+p.no+'番'; hint.style.color='var(--stu)';
+        return true;
+      }
+      s.cls=''; s.no=''; s.rosterId=''; hint.style.color='';
+      if(s.hrno===''){
+        hrnoEl.classList.remove('err'); hint.classList.remove('err');
+        hint.textContent='※ HRNO（4桁の半角数字。例：3年2組1番→3201）';
+      }else{
+        hrnoEl.classList.add('err'); hint.classList.add('err');
+        if(/[０-９]/.test(s.hrno)) hint.textContent='⚠ 全角数字になっています。半角で入力してください（例：３２０１ → 3201）';
+        else if(/[^0-9]/.test(s.hrno)) hint.textContent='⚠ 数字以外が含まれています。半角数字4桁で入力してください（例：3201）';
+        else hint.textContent='⚠ 4桁で入力してください（例：3201）';
+      }
+      return false;
+    };
+    hrnoEl.addEventListener('input',()=>{ validate(); persistSelf(); });
+  }
+  let redrawWish=bindWishEditable(s,'wishBody',persistSelf);
+  document.getElementById('addWish').onclick=()=>{ s.wishes.push(blankWish()); persistSelf(); redrawWish=bindWishEditable(s,'wishBody',persistSelf); };
+  document.getElementById('copyCodeBtn').onclick=submitCode;
+  document.getElementById('submitBtn').onclick=submitSelf;
+  document.getElementById('loadDraft').onclick=()=>openFile('student');
+  document.getElementById('metaInfo').textContent='生徒入力モード';
+}
+
+function buildSubmission(){
+  if(!parseHRNO(self_.hrno)){
+    alert('出席番号（HRNO）を「半角数字4桁」で入力してください。\n例：3年2組1番 → 3201\n（全角の ３２０１ ではなく 3201）');
+    const el=document.getElementById('hrnoInput');
+    if(el){ el.classList.add('err'); el.focus(); el.scrollIntoView({block:'center'}); }
+    return null;
+  }
+  if(!self_.name.trim()){ alert('氏名を入力してください。'); return null; }
+  self_.submittedAt=new Date().toISOString();
+  persistSelf();
+  return {app:'shinro-mendan',type:'student-submission',data:self_};
+}
+function submitCode(){
+  const payload=buildSubmission(); if(!payload) return;
+  copyText(encodeCode(payload), '✅ 提出コードをコピーしました。\n\nロイロノートでテキストカードを作り、長押し→ペーストで貼り付けて、提出箱に提出してください。');
+}
+function submitSelf(){
+  const payload=buildSubmission(); if(!payload) return;
+  download(payload, `進路希望_${self_.cls||''}_${self_.name||'生徒'}.json`);
+  alert('提出ファイルを書き出しました。\nダウンロードされたファイルを先生に渡してください。');
+}
+
+/* ============ TEACHER MODE ============ */
+function teacherSidebar(){
+  document.getElementById('sidebar').classList.remove('hidden');
+  document.getElementById('sideActions').innerHTML=`<button class="btn primary" id="addBtn">＋ 生徒を追加</button>`
+    +(ROSTER.length?`<button class="btn ghost" id="seedBtn" title="名簿に登録されている生徒を一覧に追加">📋 名簿から作成</button>`:'');
+  document.getElementById('sideFoot').innerHTML=`
+    <button class="btn stu mini" id="importCode" style="flex-basis:100%">📋 提出コードを貼り付けて取込</button>
+    <button class="btn ghost mini" id="importStu">📥 提出ファイルを取込</button>
+    <button class="btn ghost mini" id="exportAll">💾 名簿を書出</button>
+    <button class="btn ghost mini" id="importAll">📂 名簿を読込</button>`;
+  document.getElementById('addBtn').onclick=()=>{ const s=newStudent(); state.students.push(s); currentId=s.id; persistState(); render(); };
+  const seedBtn=document.getElementById('seedBtn');
+  if(seedBtn) seedBtn.onclick=()=>{ const n=seedRoster(); render(); alert(n?`名簿から ${n}名 を追加しました。`:'追加する生徒はありませんでした（すでに全員登録済み）。'); };
+  document.getElementById('importCode').onclick=openCodeImport;
+  document.getElementById('importStu').onclick=()=>openFile('teacher-import-student');
+  document.getElementById('exportAll').onclick=()=>download(state,`進路面談名簿_${new Date().toISOString().slice(0,10)}.json`);
+  document.getElementById('importAll').onclick=()=>openFile('teacher-import-all');
+}
+
+// 名簿から未登録の生徒を作成（既存の生徒・記入は保持）
+function seedRoster(){
+  if(!ROSTER.length) return 0;
+  let added=0;
+  ROSTER.forEach(r=>{
+    const rid=rosterIdOf(r);
+    if(!state.students.some(s=>s.rosterId===rid)){ state.students.push(studentFromRoster(r)); added++; }
+  });
+  if(added) persistState();
+  return added;
+}
+
+function renderTeacher(){
+  // 名簿があり、まだ生徒が1人もいなければ自動で名簿から作成
+  if(ROSTER.length && state.students.length===0) seedRoster();
+  teacherSidebar(); renderList();
+  const s=current();
+  const main=document.getElementById('main');
+  if(!s){ main.innerHTML=emptyHTML('左の「＋ 生徒を追加」から始めるか、<br>「📥 生徒の提出を取込」で生徒が書き出したファイルを読み込んでください。'); document.getElementById('metaInfo').textContent=`教員入力モード ・ 生徒 ${state.students.length} 名`; return; }
+  main.innerHTML=`
+  <div class="wrap">
+    <div class="toolbar no-print">
+      <button class="btn ghost" onclick="window.print()">🖨 印刷 / PDF保存</button>
+      <span class="save-state" id="saveState">✓ 自動保存しました</span>
+      <span class="sp"></span>
+      <button class="btn danger mini" id="delStudent">この生徒を削除</button>
+    </div>
+
+    <div class="card stuband">
+      <h2>👤 生徒基本情報 <span class="role-tag s">生徒記入</span></h2>
+      <div class="grid g4">
+        <div class="field"><label>氏名</label><input data-f="name" value="${esc(s.name)}"></div>
+        <div class="field"><label>ふりがな</label><input data-f="kana" value="${esc(s.kana)}"></div>
+        <div class="field"><label>クラス</label><input data-f="cls" value="${esc(s.cls)}"></div>
+        <div class="field"><label>出席番号</label><input data-f="no" value="${esc(s.no)}"></div>
+      </div>
+      <div class="grid g2" style="margin-top:12px">
+        <div class="field"><label>進路区分</label>
+          <select data-f="course"><option value="">未定</option>
+            <option value="進学" ${s.course==='進学'?'selected':''}>進学</option>
+            <option value="就職" ${s.course==='就職'?'selected':''}>就職</option></select></div>
+      </div>
+      ${s.submittedAt?`<div class="hint" style="margin-top:8px">📥 生徒提出：${new Date(s.submittedAt).toLocaleString('ja-JP')}</div>`:''}
+    </div>
+
+    <div class="card stuband">
+      <h2>💭 本人の希望・将来像 <span class="role-tag s">生徒記入</span></h2>
+      <div class="field"><textarea data-f="wishField" style="min-height:80px">${esc(s.wishField)}</textarea></div>
+    </div>
+
+    <div class="card stuband">
+      <h2>🎯 希望進路（志望先） <span class="role-tag s">生徒記入</span></h2>
+      <table class="wish"><thead><tr>
+        <th style="width:48px">志望</th><th style="width:90px">区分</th>
+        <th>学校名 / 企業名</th><th>学部・学科 / 職種</th>
+        <th style="width:140px">受験方式・選考</th><th>備考</th><th style="width:40px"></th>
+      </tr></thead><tbody id="wishBody"></tbody></table>
+      <button class="btn ghost mini no-print" id="addWish" style="margin-top:10px">＋ 志望先を追加</button>
+    </div>
+
+    <div class="card stuband">
+      <h2>📊 得意・苦手（本人申告） <span class="role-tag s">生徒記入</span></h2>
+      <div class="grid g2">
+        <div class="field"><label>得意科目・強み</label><textarea data-f="subjectsGood">${esc(s.subjectsGood)}</textarea></div>
+        <div class="field"><label>苦手科目・課題</label><textarea data-f="subjectsWeak">${esc(s.subjectsWeak)}</textarea></div>
+      </div>
+      <div class="field" style="margin-top:12px"><label>面談で相談したいこと</label><textarea data-f="studentQuestions">${esc(s.studentQuestions)}</textarea></div>
+    </div>
+
+    <div class="card stuband">
+      <h2>🏠 家庭で話したこと（条件） <span class="role-tag s">生徒記入</span></h2>
+      <div class="grid g3">
+        <div class="field"><label>一人暮らし・通学範囲</label><select data-f="famAlone">${optionsHTML(ALONE_OPTS,s.famAlone)}</select></div>
+        <div class="field"><label>浪人について</label><select data-f="famRonin">${optionsHTML(RONIN_OPTS,s.famRonin)}</select></div>
+        <div class="field"><label>国公立・私立のしばり</label><select data-f="famUniv">${optionsHTML(UNIV_OPTS,s.famUniv)}</select></div>
+      </div>
+      <div class="grid g2" style="margin-top:12px">
+        <div class="field"><label>進学・通学してよい地域の範囲</label><input data-f="famArea" value="${esc(s.famArea)}" placeholder="例：関東〜中部／本州のみ など"></div>
+        <div class="field"><label>その他、家庭で話したこと</label><input data-f="famNote" value="${esc(s.famNote)}" placeholder="学費・奨学金・保護者の希望など"></div>
+      </div>
+    </div>
+
+    <div class="card teaband">
+      <h2>🧑‍🏫 成績・学力評価 <span class="role-tag t">教員記入</span></h2>
+      <div class="grid g2">
+        <div class="field"><label>評定平均</label><input data-f="grade" value="${esc(s.grade)}" placeholder="例：4.1"></div>
+        <div class="field"><label>模試判定・学力状況</label><input data-f="moshi" value="${esc(s.moshi)}" placeholder="第◯回模試 A判定 / 共テ換算◯◯%"></div>
+      </div>
+    </div>
+
+    <div class="card teaband">
+      <h2>🧑‍🏫 保護者・費用・指導方針 <span class="role-tag t">教員記入</span></h2>
+      <div class="grid g3">
+        <div class="field"><label>保護者の意向</label><textarea data-f="guardian" placeholder="自宅から通える範囲を希望 等">${esc(s.guardian)}</textarea></div>
+        <div class="field"><label>学費・奨学金</label><textarea data-f="cost" placeholder="奨学金検討中 等">${esc(s.cost)}</textarea></div>
+        <div class="field"><label>今後の課題・指導方針</label><textarea data-f="tasks" placeholder="出願書類準備、面接練習 等">${esc(s.tasks)}</textarea></div>
+      </div>
+      <div class="field" style="margin-top:12px"><label>教員所見</label><textarea data-f="teacherComment" placeholder="担任としての見立て・アドバイス">${esc(s.teacherComment)}</textarea></div>
+    </div>
+
+    <div class="card teaband">
+      <h2>📝 面談記録 <span class="role-tag t">教員記入</span></h2>
+      <div id="logBody"></div>
+      <button class="btn ghost mini no-print" id="addLog" style="margin-top:6px">＋ 面談を記録</button>
+    </div>
+  </div>`;
+
+  document.querySelectorAll('[data-f]').forEach(el=>el.addEventListener('input',()=>{
+    s[el.dataset.f]=el.value; persistState();
+    if(['name','cls','no'].includes(el.dataset.f)) renderList();
+    if(el.dataset.f==='course'){ renderList(); redrawWish=bindWishEditable(s,'wishBody',()=>{persistState();renderList();}); }
+    if(el.dataset.f==='wishField') {}
+  }));
+  let redrawWish=bindWishEditable(s,'wishBody',()=>{persistState();renderList();});
+  let redrawLog=bindLogsEditable(s,'logBody',persistState);
+  document.getElementById('addWish').onclick=()=>{ s.wishes.push(blankWish()); persistState(); redrawWish=bindWishEditable(s,'wishBody',()=>{persistState();renderList();}); };
+  document.getElementById('addLog').onclick=()=>{ s.logs.unshift(blankLog()); persistState(); redrawLog=bindLogsEditable(s,'logBody',persistState); };
+  document.getElementById('delStudent').onclick=()=>{ if(confirm(`「${s.name||'この生徒'}」の資料を削除します。よろしいですか？`)){ state.students=state.students.filter(x=>x.id!==s.id); currentId=null; persistState(); render(); } };
+  document.getElementById('metaInfo').textContent=`教員入力モード ・ 生徒 ${state.students.length} 名`;
+}
+
+/* ============ MEETING (combined) MODE ============ */
+function renderMeeting(){
+  document.getElementById('sidebar').classList.remove('hidden');
+  document.getElementById('sideActions').innerHTML='';
+  document.getElementById('sideFoot').innerHTML='';
+  renderList();
+  const s=current();
+  const main=document.getElementById('main');
+  if(!s){ main.innerHTML=emptyHTML('左の一覧から、面談する生徒を選んでください。'); document.getElementById('metaInfo').textContent=`面談モード ・ 生徒 ${state.students.length} 名`; return; }
+  const courseLabel=s.course||'未定';
+  const wishRows=s.wishes.map((w,i)=>`<tr><td style="text-align:center;font-weight:700">第${i+1}</td><td>${disp(w.type)}</td><td>${disp(w.name)}</td><td>${disp(w.dept)}</td><td>${disp(w.method)}</td><td>${disp(w.note)}</td></tr>`).join('');
+  main.innerHTML=`
+  <div class="wrap">
+    <div class="toolbar no-print">
+      <button class="btn ghost" onclick="window.print()">🖨 印刷 / PDF保存</button>
+      <span class="hint">この画面を生徒と一緒に見ながら面談できます。下の「面談記録」はその場で入力できます。</span>
+      <span class="save-state" id="saveState">✓ 保存しました</span>
+    </div>
+
+    <div class="mtg-head">
+      <span class="big">${esc(s.name)||'（氏名未入力）'}</span>
+      <span class="kana">${esc(s.kana)}</span>
+      <span class="pill ${s.course==='進学'?'shingaku':s.course==='就職'?'shushoku':'mitedate'}">${courseLabel}</span>
+      <span class="kana">${esc(s.cls)}${s.no?' '+esc(s.no)+'番':''}</span>
+      <span class="kana" style="margin-left:auto">評定平均 <b style="font-size:16px;color:var(--ink)">${esc(s.grade)||'—'}</b></span>
+    </div>
+
+    <div class="mtg-cols">
+      <div>
+        <div class="card stuband">
+          <h2>🙋 本人の希望 <span class="role-tag s">生徒</span></h2>
+          <div class="read"><div class="k">希望・将来やりたいこと</div><div class="v">${disp(s.wishField)}</div></div>
+          <div class="read"><div class="k">得意・強み</div><div class="v">${disp(s.subjectsGood)}</div></div>
+          <div class="read"><div class="k">苦手・不安</div><div class="v">${disp(s.subjectsWeak)}</div></div>
+          <div class="read"><div class="k">相談したいこと</div><div class="v">${disp(s.studentQuestions)}</div></div>
+        </div>
+        <div class="card stuband">
+          <h2>🏠 家庭で話したこと <span class="role-tag s">生徒</span></h2>
+          <div class="read"><div class="k">一人暮らし・通学範囲</div><div class="v">${disp(s.famAlone)}</div></div>
+          <div class="read"><div class="k">浪人について</div><div class="v">${disp(s.famRonin)}</div></div>
+          <div class="read"><div class="k">国公立・私立のしばり</div><div class="v">${disp(s.famUniv)}</div></div>
+          <div class="read"><div class="k">行ける地域の範囲</div><div class="v">${disp(s.famArea)}</div></div>
+          <div class="read"><div class="k">その他 家庭で話したこと</div><div class="v">${disp(s.famNote)}</div></div>
+        </div>
+      </div>
+      <div>
+        <div class="card teaband">
+          <h2>🧑‍🏫 先生の見立て <span class="role-tag t">教員</span></h2>
+          <div class="read"><div class="k">模試判定・学力状況</div><div class="v">${disp(s.moshi)}</div></div>
+          <div class="read"><div class="k">保護者の意向</div><div class="v">${disp(s.guardian)}</div></div>
+          <div class="read"><div class="k">学費・奨学金</div><div class="v">${disp(s.cost)}</div></div>
+          <div class="read"><div class="k">今後の課題・指導方針</div><div class="v">${disp(s.tasks)}</div></div>
+          <div class="read"><div class="k">教員所見</div><div class="v">${disp(s.teacherComment)}</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🎯 希望進路（志望先）</h2>
+      <table class="read-wish"><thead><tr><th style="width:44px">志望</th><th style="width:80px">区分</th><th>学校名 / 企業名</th><th>学部・学科 / 職種</th><th>受験方式・選考</th><th>備考</th></tr></thead>
+      <tbody>${wishRows}</tbody></table>
+    </div>
+
+    <div class="card teaband">
+      <h2>📝 面談記録（その場で入力できます） <span class="role-tag t">教員</span></h2>
+      <div id="logBody"></div>
+      <button class="btn ghost mini no-print" id="addLog" style="margin-top:6px">＋ 面談を記録</button>
+    </div>
+  </div>`;
+  let redrawLog=bindLogsEditable(s,'logBody',persistState);
+  document.getElementById('addLog').onclick=()=>{ s.logs.unshift(blankLog()); persistState(); redrawLog=bindLogsEditable(s,'logBody',persistState); };
+  document.getElementById('metaInfo').textContent=`面談モード ・ 生徒 ${state.students.length} 名`;
+}
+
+/* ============ sidebar list (teacher & meeting) ============ */
+function current(){ return state.students.find(s=>s.id===currentId); }
+function renderList(){
+  const q=(document.getElementById('search').value||'').trim().toLowerCase();
+  const list=document.getElementById('studentList');
+  list.innerHTML='';
+  const filtered=state.students.filter(s=>!q||(s.name+s.kana+s.no+s.cls).toLowerCase().includes(q));
+  // 出席番号順に表示（番号なしは末尾）
+  const numOf=s=>{ const n=parseInt(s.no,10); return isNaN(n)?Infinity:n; };
+  filtered.sort((a,b)=>numOf(a)-numOf(b));
+  if(!filtered.length){ list.innerHTML=`<div class="list-empty">${state.students.length?'該当する生徒がいません':'生徒がまだいません'}</div>`; return; }
+  filtered.forEach(s=>{
+    const div=document.createElement('div');
+    div.className='stu'+(s.id===currentId?' active':'');
+    let cls='mitedate',label='未定';
+    if(s.course==='進学'){cls='shingaku';label='進学';} else if(s.course==='就職'){cls='shushoku';label='就職';}
+    const top=s.wishes&&s.wishes[0]&&s.wishes[0].name?s.wishes[0].name:'（第1志望 未記入）';
+    const sub=s.submittedAt?'<span class="pill sub-ok">提出済</span>':'<span class="pill sub-no">未提出</span>';
+    div.innerHTML=`<div class="nm">${esc(s.name)||'（氏名未入力）'}</div>
+      <div class="sub"><span class="pill ${cls}">${label}</span><span>${esc(s.cls)}${s.no?'-'+esc(s.no):''}</span>${sub}</div>
+      <div class="sub" style="color:#1d4f86">${esc(top)}</div>`;
+    div.onclick=()=>{ currentId=s.id; render(); };
+    list.appendChild(div);
+  });
+}
+function emptyHTML(msg){ return `<div class="empty"><svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg><div>${msg}</div></div>`; }
+
+/* ============ 提出コード（ロイロノート向け コピー＆ペースト） ============ */
+function encodeCode(obj){ return 'SNRO1:'+btoa(unescape(encodeURIComponent(JSON.stringify(obj)))); }
+function decodeCode(token){
+  const b=token.replace(/^SNRO1:/,'').replace(/\s/g,'');
+  try{ return JSON.parse(decodeURIComponent(escape(atob(b)))); }catch(e){ return null; }
+}
+function copyText(text, okMsg){
+  const done=()=>okMsg&&alert(okMsg);
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done).catch(()=>fallbackCopy(text,done));
+  } else fallbackCopy(text,done);
+}
+function fallbackCopy(text,cb){
+  const ta=document.createElement('textarea'); ta.value=text;
+  ta.style.position='fixed'; ta.style.top='0'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try{ document.execCommand('copy'); }catch(e){}
+  document.body.removeChild(ta); cb&&cb();
+}
+function openCodeImport(){
+  const ov=document.createElement('div'); ov.className='overlay';
+  ov.innerHTML=`<div class="modal">
+    <h3>📋 提出コードを貼り付けて取込</h3>
+    <p class="hint">ロイロノートの提出箱にある生徒のコードをコピーして、下の欄に貼り付けてください。複数の生徒のコードをまとめて貼り付けてもOKです（改行で区切る）。</p>
+    <textarea id="codeInput" placeholder="SNRO1:..... を貼り付け"></textarea>
+    <div class="modal-act">
+      <button class="btn ghost" id="codeCancel">キャンセル</button>
+      <button class="btn primary" id="codeDo">取り込む</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  const close=()=>ov.remove();
+  ov.onclick=e=>{ if(e.target===ov) close(); };
+  ov.querySelector('#codeCancel').onclick=close;
+  ov.querySelector('#codeDo').onclick=()=>{
+    const text=ov.querySelector('#codeInput').value;
+    const tokens=text.split(/\s+/).filter(t=>t.indexOf('SNRO1:')>=0).map(t=>t.slice(t.indexOf('SNRO1:')));
+    if(!tokens.length){ alert('提出コード（SNRO1: で始まる文字列）が見つかりませんでした。'); return; }
+    let ok=0, ng=0, names=[];
+    tokens.forEach(tok=>{
+      const d=decodeCode(tok);
+      if(d&&d.type==='student-submission'&&d.data&&d.data.name!==undefined){ importStudentSubmission(d.data,true); ok++; names.push(d.data.name||'(無名)'); }
+      else ng++;
+    });
+    close();
+    if(ok){ persistState(); render(); }
+    alert(`${ok}名を取り込みました${ng?`（${ng}件は読み取れませんでした）`:''}。\n`+names.map(n=>'・'+n).join('\n'));
+  };
+  setTimeout(()=>ov.querySelector('#codeInput').focus(),50);
+}
+
+/* ============ files ============ */
+function download(obj,filename){
+  const blob=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=filename; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+let pendingFileAction=null;
+function openFile(action){ pendingFileAction=action; document.getElementById('fileInput').click(); }
+document.getElementById('fileInput').onchange=e=>{
+  const f=e.target.files[0]; if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{ try{ handleFile(JSON.parse(r.result)); }catch(err){ alert('ファイルを読み込めませんでした。形式が正しいか確認してください。'); } };
+  r.readAsText(f); e.target.value='';
+};
+function handleFile(d){
+  if(pendingFileAction==='student'){ // 生徒：前回提出ファイルを下書きに復元
+    const data=d.type==='student-submission'?d.data:d;
+    if(data.name===undefined){ alert('生徒の提出ファイルではないようです。'); return; }
+    self_=Object.assign(newStudent(),data); self_.id=uid(); persistSelf(); render();
+    alert('前回の入力内容を読み込みました。'); return;
+  }
+  if(pendingFileAction==='teacher-import-student'){
+    if(d.type!=='student-submission'||!d.data){ alert('これは生徒の提出ファイルではありません。\n（生徒入力モードで書き出したファイルを選んでください）'); return; }
+    importStudentSubmission(d.data); return;
+  }
+  if(pendingFileAction==='teacher-import-all'){
+    if(!d.students){ alert('名簿ファイルではありません。'); return; }
+    if(confirm('読み込んだ生徒を名簿に取り込みます。\n（同じ出席番号の生徒がいれば、読み込んだ内容で置き換えます）')){
+      d.students.forEach(st=>{
+        st.id=uid();
+        if(st.rosterId) state.students=state.students.filter(s=>s.rosterId!==st.rosterId);
+        state.students.push(st);
+      });
+      persistState(); render();
+    }
+    return;
+  }
+}
+function importStudentSubmission(data, quiet){
+  // ① 固定ID（rosterId）が一致する生徒を最優先で照合 → ② 氏名＋クラス一致 → ③ なければ新規追加
+  let target=null;
+  if(data.rosterId) target=state.students.find(s=>s.rosterId&&s.rosterId===data.rosterId);
+  if(!target && data.name && data.name.trim()){
+    const key=data.name.trim()+'|'+(data.cls||'').trim();
+    target=state.students.find(s=>((s.name||'').trim()+'|'+(s.cls||'').trim())===key);
+  }
+  let isNew=false;
+  if(!target){ target=newStudent(); state.students.push(target); isNew=true; }
+  STU_FIELDS.forEach(f=>{
+    if(data[f]===undefined) return;
+    // 氏名・ふりがなは、先生が登録済みのものを優先（生徒が入力した表記で上書きしない）
+    if((f==='name'||f==='kana') && target[f] && target[f].trim()) return;
+    target[f]=data[f];
+  });
+  if(Array.isArray(data.wishes)) target.wishes=data.wishes.length?data.wishes:[blankWish()];
+  target.submittedAt=data.submittedAt||new Date().toISOString();
+  currentId=target.id;
+  if(quiet) return; // 一括取込時は呼び出し側でまとめて保存・描画・通知
+  persistState(); render();
+  alert(`${target.name||'生徒'} さんの提出内容を${isNew?'新規に取り込みました':'既存の記録に反映しました'}。\n（教員記入欄はそのまま保持されています）`);
+}
+
+/* ============ mode switch & boot ============ */
+function setMode(m){
+  mode=m;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.mode===m));
+  document.getElementById('search').oninput=renderList;
+  render();
+}
+function render(){
+  if(mode==='student') renderStudent();
+  else if(mode==='meeting') renderMeeting();
+  else renderTeacher();
+}
+/* ===== 表示モード切替 =====
+   通常URL（生徒に配るリンク/QR）→ 生徒入力だけ表示。
+   先生は、URLの末尾に合言葉を付けたアドレスで全機能を開く：
+     https://◯◯◯.netlify.app/#TEACHER_KEY
+   ※合言葉は下の TEACHER_KEY を変えればOK（変えたら再デプロイ）。 */
+const TEACHER_KEY='sensei-2026';
+const isTeacherView=(location.hash+location.search).includes(TEACHER_KEY);
+if(isTeacherView){
+  // 先生：3タブ全部使える
+  document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>setMode(t.dataset.mode));
+  setMode('teacher');
+}else{
+  // 生徒：生徒入力だけ。タブは隠す
+  document.querySelector('.tabs').style.display='none';
+  setMode('student');
+}
+</script>
+</body>
+</html>
