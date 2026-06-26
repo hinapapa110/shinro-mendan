@@ -135,8 +135,13 @@
   .moshi-total .big{font-size:24px;font-weight:800;color:var(--ink)}
   .moshi-total .big .u{font-size:13px;font-weight:600;margin-left:1px}
   .moshi-total .dv{font-size:13px;color:var(--sub)}
-  .moshi-key{font-size:12px;color:var(--sub);font-weight:700;margin:8px 0 2px}
+  .moshi-key{font-size:12px;color:var(--sub);font-weight:700;margin:8px 0 4px}
   td.num{text-align:right;font-variant-numeric:tabular-nums}
+  .subj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:6px}
+  .subj-item{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:7px;padding:5px 10px;background:#fff}
+  .subj-item .sn{flex:1;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .subj-item .sv{font-weight:700;font-size:14px;font-variant-numeric:tabular-nums}
+  .subj-item .sh{font-size:11px;color:var(--sub);font-variant-numeric:tabular-nums}
   .moshi-detail{margin-top:6px}
   .moshi-detail summary{cursor:pointer;font-size:12px;color:var(--accent);font-weight:600;padding:2px 0}
   /* modal */
@@ -927,8 +932,8 @@ function judgeBadge(v){
 }
 const MOSHI_TOP=new Set(['国語','数学計','英語計','地歴・公民計','公民計','理科計','理科基礎計','情報計','数学①②']);
 const isMainSubject=l=> MOSHI_TOP.has(l) || l.indexOf('英語・')===0;
-function subjRows(arr){
-  return arr.map(x=>`<tr><td>${esc(x.label)}</td><td class="num">${esc(x.score)}</td><td class="num">${esc(x.hensa)}</td><td>${judgeBadge(x.gtz)}</td></tr>`).join('');
+function subjGrid(arr){
+  return `<div class="subj-grid">${arr.map(x=>`<div class="subj-item"><span class="sn">${esc(x.label)}</span><span class="sv">${esc(x.score)}</span>${x.hensa?`<span class="sh">偏${esc(x.hensa)}</span>`:''}${judgeBadge(x.gtz)}</div>`).join('')}</div>`;
 }
 // 模試結果の表示HTML（総合を大きく・主要教科＋折りたたみ・判定色分け）
 function moshiCardHTML(s, editable){
@@ -945,9 +950,9 @@ function moshiCardHTML(s, editable){
         <span class="dv">偏差値 <b>${esc(total.hensa)}</b></span>
         ${judgeBadge(total.gtz)}
       </div>` : '';
-    const mainTable = main.length ? `<table class="read-wish"><thead><tr><th>主要教科</th><th style="width:64px">得点</th><th style="width:64px">偏差値</th><th style="width:54px">GTZ</th></tr></thead><tbody>${subjRows(main)}</tbody></table>` : '';
+    const mainTable = main.length ? `<div class="moshi-key">主要教科（得点／偏差値／判定）</div>${subjGrid(main)}` : '';
     const detailBlock = detail.length ? `<details class="moshi-detail"><summary>＋ その他の科目（内訳）を表示（${detail.length}）</summary>
-        <table class="read-wish"><tbody>${subjRows(detail)}</tbody></table></details>` : '';
+        <div style="margin-top:6px">${subjGrid(detail)}</div></details>` : '';
     const judgeTable = m.judges&&m.judges.length ? `<div class="moshi-key">🎯 志望校判定</div>
       <table class="read-wish"><thead><tr><th>大学</th><th>学部・学科</th><th style="width:60px">日程</th><th style="width:50px">共テ</th><th style="width:60px">2次/一般</th></tr></thead>
       <tbody>${m.judges.map(j=>`<tr><td>${esc(j.univ)}</td><td>${esc(j.fac)}${j.dept?' '+esc(j.dept):''}</td><td>${esc(j.sched)}</td><td style="text-align:center">${judgeBadge(j.kyote)}</td><td style="text-align:center">${judgeBadge(j.niji)}</td></tr>`).join('')}</tbody></table>` : '';
