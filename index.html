@@ -125,6 +125,10 @@
   table.read-wish{width:100%;border-collapse:collapse;margin-top:4px}
   table.read-wish th,table.read-wish td{border:1px solid var(--line);padding:5px 8px;font-size:13px;text-align:left}
   table.read-wish th{background:#f7fafd;color:var(--sub);font-size:11px}
+  .moshi-entry{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:10px;background:#fcfdfe}
+  .moshi-head{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:14px}
+  .moshi-entry table.read-wish{margin-top:2px}
+  .moshi-entry table.read-wish td{padding:3px 6px;font-size:12px}
   /* modal */
   .overlay{position:fixed;inset:0;background:rgba(20,35,55,.45);z-index:50;display:flex;align-items:center;justify-content:center;padding:20px}
   .modal{background:#fff;border-radius:14px;padding:22px 24px;width:min(560px,100%);box-shadow:0 12px 40px rgba(0,0,0,.25)}
@@ -169,6 +173,7 @@
 </div>
 
 <input type="file" id="fileInput" accept="application/json" style="display:none">
+<input type="file" id="csvInput" accept=".csv,text/csv" style="display:none">
 
 <script>
 /* ============ data ============ */
@@ -220,6 +225,7 @@ function newStudent(){
     famAlone:'', famRonin:'', famUniv:'', famArea:'', famNote:'',
     wishes:[blankWish()],
     grade:'', moshi:'', guardian:'', cost:'', tasks:'', teacherComment:'',
+    moshiList:[],
     logs:[blankLog()], submittedAt:'' };
 }
 // 名簿1件 → 生徒オブジェクト（生徒記入欄のみ。固定IDを付与）
@@ -462,6 +468,7 @@ function teacherSidebar(){
     +(ROSTER.length?`<button class="btn ghost" id="seedBtn" title="名簿に登録されている生徒を一覧に追加">📋 名簿から作成</button>`:'');
   document.getElementById('sideFoot').innerHTML=`
     <button class="btn stu mini" id="importCode" style="flex-basis:100%">📋 提出コードを貼り付けて取込</button>
+    <button class="btn ghost mini" id="importMoshi" style="flex-basis:100%">📈 模試CSVを取込</button>
     <button class="btn ghost mini" id="importStu">📥 提出ファイルを取込</button>
     <button class="btn ghost mini" id="exportAll">💾 名簿を書出</button>
     <button class="btn ghost mini" id="importAll">📂 名簿を読込</button>`;
@@ -469,6 +476,7 @@ function teacherSidebar(){
   const seedBtn=document.getElementById('seedBtn');
   if(seedBtn) seedBtn.onclick=()=>{ const n=seedRoster(); render(); alert(n?`名簿から ${n}名 を追加しました。`:'追加する生徒はありませんでした（すでに全員登録済み）。'); };
   document.getElementById('importCode').onclick=openCodeImport;
+  document.getElementById('importMoshi').onclick=openMoshiCSV;
   document.getElementById('importStu').onclick=()=>openFile('teacher-import-student');
   document.getElementById('exportAll').onclick=()=>download(state,`進路面談名簿_${new Date().toISOString().slice(0,10)}.json`);
   document.getElementById('importAll').onclick=()=>openFile('teacher-import-all');
@@ -560,8 +568,13 @@ function renderTeacher(){
       <h2>🧑‍🏫 成績・学力評価 <span class="role-tag t">教員記入</span></h2>
       <div class="grid g2">
         <div class="field"><label>評定平均</label><input data-f="grade" value="${esc(s.grade)}" placeholder="例：4.1"></div>
-        <div class="field"><label>模試判定・学力状況</label><input data-f="moshi" value="${esc(s.moshi)}" placeholder="第◯回模試 A判定 / 共テ換算◯◯%"></div>
+        <div class="field"><label>模試判定・学力状況（メモ）</label><input data-f="moshi" value="${esc(s.moshi)}" placeholder="第◯回模試 A判定 / 共テ換算◯◯%"></div>
       </div>
+    </div>
+
+    <div class="card teaband">
+      <h2>📈 模試結果（CSV取込） <span class="role-tag t">教員記入</span></h2>
+      <div id="moshiBox">${moshiCardHTML(s,true)}</div>
     </div>
 
     <div class="card teaband">
@@ -592,7 +605,15 @@ function renderTeacher(){
   document.getElementById('addWish').onclick=()=>{ s.wishes.push(blankWish()); persistState(); redrawWish=bindWishEditable(s,'wishBody',()=>{persistState();renderList();}); };
   document.getElementById('addLog').onclick=()=>{ s.logs.unshift(blankLog()); persistState(); redrawLog=bindLogsEditable(s,'logBody',persistState); };
   document.getElementById('delStudent').onclick=()=>{ if(confirm(`「${s.name||'この生徒'}」の資料を削除します。よろしいですか？`)){ state.students=state.students.filter(x=>x.id!==s.id); currentId=null; persistState(); render(); } };
+  bindMoshiDelete(s);
   document.getElementById('metaInfo').textContent=`教員入力モード ・ 生徒 ${state.students.length} 名`;
+}
+function bindMoshiDelete(s){
+  document.querySelectorAll('#moshiBox [data-delmoshi]').forEach(b=>b.onclick=()=>{
+    const mi=+b.dataset.delmoshi; const nm=s.moshiList[mi]?s.moshiList[mi].name:'';
+    if(confirm(`模試「${nm}」を削除しますか？`)){ s.moshiList.splice(mi,1); persistState();
+      const box=document.getElementById('moshiBox'); if(box){ box.innerHTML=moshiCardHTML(s,true); bindMoshiDelete(s); } }
+  });
 }
 
 /* ============ MEETING (combined) MODE ============ */
@@ -657,6 +678,8 @@ function renderMeeting(){
       <table class="read-wish"><thead><tr><th style="width:44px">志望</th><th style="width:80px">区分</th><th>学校名 / 企業名</th><th>学部・学科 / 職種</th><th>受験方式・選考</th><th>備考</th></tr></thead>
       <tbody>${wishRows}</tbody></table>
     </div>
+
+    ${(s.moshiList&&s.moshiList.length)?`<div class="card"><h2>📈 模試結果</h2>${moshiCardHTML(s)}</div>`:''}
 
     <div class="card teaband">
       <h2>📝 面談記録（その場で入力できます） <span class="role-tag t">教員</span></h2>
@@ -807,6 +830,98 @@ function importStudentSubmission(data, quiet){
   if(quiet) return; // 一括取込時は呼び出し側でまとめて保存・描画・通知
   persistState(); render();
   alert(`${target.name||'生徒'} さんの提出内容を${isNew?'新規に取り込みました':'既存の記録に反映しました'}。\n（教員記入欄はそのまま保持されています）`);
+}
+
+/* ============ 模試CSV取込（ベネッセ等・Shift-JIS） ============ */
+// CSV文字列 → 行配列（ダブルクォート対応）
+function parseCSV(text){
+  const rows=[]; let row=[], field='', inQ=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(inQ){
+      if(c==='"'){ if(text[i+1]==='"'){ field+='"'; i++; } else inQ=false; }
+      else field+=c;
+    }else{
+      if(c==='"') inQ=true;
+      else if(c===',') { row.push(field); field=''; }
+      else if(c==='\r'){}
+      else if(c==='\n'){ row.push(field); rows.push(row); row=[]; field=''; }
+      else field+=c;
+    }
+  }
+  if(field!==''||row.length){ row.push(field); rows.push(row); }
+  return rows;
+}
+// ヘッダから科目・志望校の列位置を割り出す
+function moshiColumnDefs(hdr){
+  const idx={}; hdr.forEach((h,i)=>{ if(idx[h]===undefined) idx[h]=i; });
+  const subjects=[];
+  hdr.forEach((h,i)=>{ const m=h.match(/^(.+)_得点$/); if(m){ const p=m[1];
+    subjects.push({ label:p, score:i, gtz:idx[p+'_GTZ'], hensa:idx[p+'_偏差値（全国）'], rank:idx[p+'_順位（全国）'] }); }});
+  const judges=[]; const wide='１２３４５６７８';
+  for(let n=1;n<=8;n++){ const pre='志望'+wide[n-1]+'_';
+    if(idx[pre+'大学名称']!==undefined){
+      judges.push({ univ:idx[pre+'大学名称'], fac:idx[pre+'学部名称'], dept:idx[pre+'学科名称'],
+        sched:idx[pre+'日程名称'], kyote:idx[pre+'共テ判定'], niji:idx[pre+'２次・一般判定'] }); }}
+  return { hrnoIdx:idx['HRNO'], nameIdx:idx['氏名'], subjects, judges };
+}
+function parseMoshiCSV(text){
+  const rows=parseCSV(text).filter(r=>r.length>1 && r.some(c=>c!==''));
+  if(rows.length<2) return [];
+  const hdr=rows[0].map(s=>s.trim());
+  const def=moshiColumnDefs(hdr);
+  if(def.hrnoIdx===undefined) return [];
+  const g=(row,i)=>i!==undefined?(row[i]||'').trim():'';
+  const out=[];
+  for(let r=1;r<rows.length;r++){ const row=rows[r];
+    const hrno=g(row,def.hrnoIdx); if(!/^\d{4}$/.test(hrno)) continue;
+    const subjects=def.subjects.map(s=>({label:s.label,score:g(row,s.score),hensa:g(row,s.hensa),gtz:g(row,s.gtz),rank:g(row,s.rank)})).filter(x=>x.score!=='');
+    const judges=def.judges.map(j=>({univ:g(row,j.univ),fac:g(row,j.fac),dept:g(row,j.dept),sched:g(row,j.sched),kyote:g(row,j.kyote),niji:g(row,j.niji)})).filter(x=>x.univ!=='');
+    out.push({ hrno, name:g(row,def.nameIdx), subjects, judges });
+  }
+  return out;
+}
+function openMoshiCSV(){ document.getElementById('csvInput').click(); }
+document.getElementById('csvInput').onchange=e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>importMoshiCSV(r.result, f.name.replace(/\.csv$/i,''));
+  r.onerror=()=>alert('ファイルを読み込めませんでした。');
+  try{ r.readAsText(f,'shift_jis'); }catch(_){ r.readAsText(f); }
+  e.target.value='';
+};
+function importMoshiCSV(text, defaultName){
+  let parsed=[]; try{ parsed=parseMoshiCSV(text); }catch(err){ alert('CSVを解析できませんでした。'); return; }
+  if(!parsed.length){ alert('模試データが見つかりませんでした。\nHRNO列・氏名列のあるベネッセ模試CSVか確認してください。'); return; }
+  const moshiName=(prompt('模試名を入力してください（例：6月マーク模試）', defaultName||'模試')||'').trim()||'模試';
+  const date=(prompt('実施日（任意・空でもOK。例：2026-06-08）', '')||'').trim();
+  let applied=0, created=0;
+  parsed.forEach(p=>{
+    const pp=parseHRNO(p.hrno);
+    let target = pp ? state.students.find(s=>s.rosterId===pp.rosterId) : null;
+    if(!target){ target=newStudent(); if(pp){ target.cls=pp.cls; target.no=pp.no; target.rosterId=pp.rosterId; } target.hrno=p.hrno; if(p.name) target.name=p.name; state.students.push(target); created++; }
+    if(!Array.isArray(target.moshiList)) target.moshiList=[];
+    const entry={ name:moshiName, date, subjects:p.subjects, judges:p.judges };
+    const ix=target.moshiList.findIndex(m=>m.name===moshiName);
+    if(ix>=0) target.moshiList[ix]=entry; else target.moshiList.push(entry);
+    applied++;
+  });
+  persistState(); render();
+  alert(`「${moshiName}」の模試結果を ${applied}名 に取り込みました${created?`（うち${created}名は新規追加）`:''}。`);
+}
+// 模試結果の表示HTML（教員ページ用・科目別＋志望校判定）
+function moshiCardHTML(s, editable){
+  if(!s.moshiList||!s.moshiList.length) return `<div class="hint">まだ模試結果がありません。左下の「📈 模試CSVを取込」から取り込めます。</div>`;
+  return s.moshiList.map((m,mi)=>`
+    <div class="moshi-entry">
+      <div class="moshi-head"><b>📈 ${esc(m.name)}</b>${m.date?` <span class="kana">${esc(m.date)}</span>`:''}
+        <span style="flex:1"></span>${editable?`<button class="icon-btn no-print" data-delmoshi="${mi}" title="削除">✕</button>`:''}</div>
+      <table class="read-wish"><thead><tr><th>科目</th><th>得点</th><th>偏差値</th><th>GTZ</th></tr></thead>
+        <tbody>${m.subjects.map(x=>`<tr><td>${esc(x.label)}</td><td style="text-align:right">${esc(x.score)}</td><td style="text-align:right">${esc(x.hensa)}</td><td>${esc(x.gtz)}</td></tr>`).join('')}</tbody></table>
+      ${m.judges.length?`<div class="k" style="margin:8px 0 2px">志望校判定</div>
+      <table class="read-wish"><thead><tr><th>大学</th><th>学部</th><th>学科</th><th>日程</th><th>共テ</th><th>2次/一般</th></tr></thead>
+        <tbody>${m.judges.map(j=>`<tr><td>${esc(j.univ)}</td><td>${esc(j.fac)}</td><td>${esc(j.dept)}</td><td>${esc(j.sched)}</td><td style="text-align:center;font-weight:700">${esc(j.kyote)}</td><td style="text-align:center;font-weight:700">${esc(j.niji)}</td></tr>`).join('')}</tbody></table>`:''}
+    </div>`).join('');
 }
 
 /* ============ mode switch & boot ============ */
